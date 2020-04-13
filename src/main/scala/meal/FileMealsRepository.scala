@@ -14,23 +14,23 @@ class FileMealsRepository(path: Path) {
 
   private val mealRegexp = """(\d+-\d{2}-\d{2})\t(.+)""".r
 
-  def list(): Either[Seq[ListError], Seq[Meal]] = {
-    val result = Files.readAllLines(path).asScala.toSeq.map {
-      case mealRegexp(date, description) =>
-        Try(LocalDate.parse(date)).toEither
-          .map(d => Meal(d, description))
-          .left
-          .map(throwable => DateIsUnparseable(date, throwable))
-      case line => Left[ListError, Meal](LineIsNotAMeal(line))
-    }
-
-    result.foldLeft[Either[Seq[ListError], Seq[Meal]]](Right(Seq.empty)) {
-      case (Left(errors), Left(error))       => Left(errors :+ error)
-      case (errors @ Left(_), Right(_))      => errors
-      case (Right(_), Left(error))           => Left(Seq(error))
-      case (values @ Right(_), Right(value)) => values.map(_ :+ value)
-    }
-  }
+  def list(): Either[Seq[ListError], Seq[Meal]] =
+    Try(Files.readAllLines(path)).fold(
+      throwable => Left(Seq(UnderlyingError(throwable))),
+      _.asScala.toSeq
+        .map {
+          case mealRegexp(dateAsString, description) =>
+            Try(LocalDate.parse(dateAsString)).fold(
+              throwable => Left(DateIsUnparseable(dateAsString, throwable)),
+              date => Right(Meal(date, description))
+            )
+          case line => Left(LineIsNotAMeal(line))
+        }
+        .partitionMap(identity) match {
+        case (Nil, meals) => Right(meals)
+        case (errors, _)  => Left(errors)
+      }
+    )
 
   def add(meal: Meal): Either[AddError, Meal] = write(Seq(meal), CREATE, APPEND).map(_.head)
 
@@ -60,7 +60,7 @@ object FileMealsRepository {
 
   sealed trait RemoveError
 
-  case class UnderlyingError(throwable: Throwable) extends AddError with RemoveError
+  case class UnderlyingError(throwable: Throwable) extends AddError with ListError with RemoveError
 
   case class LineIsNotAMeal(line: String) extends ListError
 
