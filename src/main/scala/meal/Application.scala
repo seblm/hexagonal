@@ -17,7 +17,7 @@ object Application extends App {
   }
 
   private def extract[T](date: String)(f: LocalDate => T) =
-    Try(LocalDate.parse(date)).fold(throwable => s"date is not valid: ${throwable.getMessage}", f)
+    Try(LocalDate.parse(date)).fold(throwable => s"date '$date' is not valid: ${throwable.getMessage}", f)
 
   private def toString(seq: Seq[_]) = seq.mkString("\n")
 

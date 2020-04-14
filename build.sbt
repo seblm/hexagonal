@@ -8,6 +8,7 @@ ThisBuild / organizationName := "example"
 lazy val root = (project in file("."))
   .settings(
     name := "hexagonal",
+    libraryDependencies += `slack-api-client`,
     libraryDependencies += munit % Test,
     testFrameworks += new TestFramework("munit.Framework")
   )

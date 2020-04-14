@@ -29,3 +29,6 @@ jobs:
         key: cache-coursier-${{ hashFiles('build.sbt') }}
     - name: Run tests
       run: sbt -Dsbt.boot.directory=.sbt/boot -Dsbt.coursier.home=.coursier test
+      env:
+        MEAL_SLACK_TOKEN: ${{ secrets.MEAL_SLACK_TOKEN }}
+        MEAL_SLACK_USER_NAME: ${{ secrets.MEAL_SLACK_USER_NAME }}
