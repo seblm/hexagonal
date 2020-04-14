@@ -9,6 +9,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "hexagonal",
     libraryDependencies += `slack-api-client`,
+    libraryDependencies += `logback-classic` % Runtime,
     libraryDependencies += munit % Test,
     testFrameworks += new TestFramework("munit.Framework")
   )
