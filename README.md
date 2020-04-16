@@ -2,9 +2,20 @@
 
  - create package `meal.domain`
  - extract trait `meal.domain.Messaging` over `SlackMealClient`
+   - create trait `meal.domain.Messaging`
+   - make `SlackMealClient` extends `meal.domain.Messaging`
+   - add override modifier to send function
+   - Alt-Enter to pull member up
  - change return type of `Messaging.send` from `Either[SendError, Unit]` to `Either[String, Unit]`
-   - need to map from `SendError` to `String`
+   - on `meal.domain.Messaging.send` ⌘+F6
+   - on `SlackMealClient` need to map from `SendError` to `String`
+   - extract for comprehension to `result` val
+   - `.left.map { ... }`
+   - run tests : side effects and no tests are broken
  - extract trait `domain.MealsRepository` over `FileMealsRepository`
+   - create trait `meal.domain.MealsRepository`
+   - make `FileMealsRepository` extends `meal.domain.MealsRepository`
+   - add override modifier to all public functions
    - move `AddError`, `ListError` and `RemoveError` to `MealsRepository` companion object
  - introduce constructor parameters into `Meals`
    - adapt `MealsSuite` by changing `FunFixture[Meals]` to `FunFixture[(MemoryMessaging, Meals)]`
