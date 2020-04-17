@@ -1,21 +1,22 @@
-package meal
+package meal.infrastructure
 
 import com.slack.api.Slack
 import com.slack.api.methods.SlackApiResponse
 import com.slack.api.methods.request.chat.ChatPostMessageRequest
 import com.slack.api.methods.request.users.UsersListRequest
-import meal.SlackMealClient.{EnvironmentVariableIsNotDefined, SendError, SlackResponseError, UsernameNotFound}
+import meal.domain.Messaging
+import meal.infrastructure.SlackMealClient._
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.{Properties, Try}
 
-class SlackMealClient {
+class SlackMealClient extends Messaging {
 
   private val MEAL_SLACK_TOKEN = envOrNone("MEAL_SLACK_TOKEN")
   private val MEAL_SLACK_USER_NAME = envOrNone("MEAL_SLACK_USER_NAME")
 
-  def send(message: String): Either[SendError, Unit] = {
-    for {
+  override def send(message: String): Either[String, Unit] = {
+    val result = for {
       token <- MEAL_SLACK_TOKEN
       username <- MEAL_SLACK_USER_NAME
       slack = Slack.getInstance()
@@ -24,6 +25,11 @@ class SlackMealClient {
       userId <- users.getMembers.asScala.find(_.getName == username).toRight(UsernameNotFound(username)).map(_.getId())
       _ <- Try(methods.chatPostMessage(ChatPostMessageRequest.builder().channel(userId).text(message).build())).toSlackEither
     } yield ()
+    result.left.map {
+      case EnvironmentVariableIsNotDefined(name) => s"env $name not defined"
+      case SlackResponseError(message)           => s"slack error: $message"
+      case UsernameNotFound(username)            => s"username $username not found"
+    }
   }
 
   private def envOrNone(name: String): Either[EnvironmentVariableIsNotDefined, String] =

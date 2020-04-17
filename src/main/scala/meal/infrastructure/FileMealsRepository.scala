@@ -1,20 +1,21 @@
-package meal
+package meal.infrastructure
 
 import java.nio.file.StandardOpenOption.{APPEND, CREATE}
 import java.nio.file.{Files, OpenOption, Path}
 import java.time.LocalDate
 
-import meal.FileMealsRepository._
+import meal.domain.MealRepository._
+import meal.domain.{Meal, MealRepository}
 
 import scala.Array.emptyByteArray
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.util.Try
 
-class FileMealsRepository(path: Path) {
+class FileMealsRepository(path: Path) extends MealRepository {
 
   private val mealRegexp = """(\d+-\d{2}-\d{2})\t(.+)""".r
 
-  def list(): Either[Seq[ListError], Seq[Meal]] =
+  override def list(): Either[Seq[ListError], Seq[Meal]] =
     Try(Files.readAllLines(path)).fold(
       throwable => Left(Seq(UnderlyingError(throwable))),
       _.asScala.toSeq
@@ -32,9 +33,9 @@ class FileMealsRepository(path: Path) {
       }
     )
 
-  def add(meal: Meal): Either[AddError, Meal] = write(Seq(meal), CREATE, APPEND).map(_.head)
+  override def add(meal: Meal): Either[AddError, Meal] = write(Seq(meal), CREATE, APPEND).map(_.head)
 
-  def remove(date: LocalDate): Either[RemoveError, Seq[Meal]] =
+  override def remove(date: LocalDate): Either[RemoveError, Seq[Meal]] =
     list().fold[Either[RemoveError, Seq[Meal]]](
       errors => Left(ListErrorDuringRemove(errors)),
       meals => {
@@ -49,23 +50,5 @@ class FileMealsRepository(path: Path) {
       else meals.map(meal => s"${meal.date}\t${meal.description}").mkString("", "\n", "\n").getBytes
     Try(Files.write(path, bytes, openOptions: _*)).map(_ => meals).toEither.left.map(UnderlyingError)
   }
-
-}
-
-object FileMealsRepository {
-
-  sealed trait AddError
-
-  sealed trait ListError
-
-  sealed trait RemoveError
-
-  case class UnderlyingError(throwable: Throwable) extends AddError with ListError with RemoveError
-
-  case class LineIsNotAMeal(line: String) extends ListError
-
-  case class DateIsUnparseable(unparseableDate: String, throwable: Throwable) extends ListError
-
-  case class ListErrorDuringRemove(errors: Seq[ListError]) extends RemoveError
 
 }

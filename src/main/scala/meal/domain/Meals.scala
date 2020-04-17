@@ -1,18 +1,13 @@
-package meal
+package meal.domain
 
-import java.nio.file.Paths
 import java.time.LocalDate
 
-import meal.FileMealsRepository.{AddError, ListError, RemoveError}
+import meal.domain.MealRepository.{AddError, ListError, RemoveError}
 import org.slf4j.{Logger, LoggerFactory}
 
-class Meals {
+class Meals(mealsRepository: MealRepository, slackMealClient: Messaging) {
 
   private val logger: Logger = LoggerFactory.getLogger(getClass)
-
-  private val mealsRepository = new FileMealsRepository(Paths.get("meals.txt"))
-
-  private val slackMealClient = new SlackMealClient()
 
   def list(): Either[Seq[ListError], Seq[Meal]] = mealsRepository.list()
 

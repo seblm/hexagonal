@@ -1,12 +1,19 @@
-package meal
+package meal.application
 
+import java.nio.file.Paths
 import java.time.LocalDate
+
+import meal.domain.Meals
+import meal.infrastructure.{FileMealsRepository, SlackMealClient}
 
 import scala.util.Try
 
 object Application extends App {
 
-  private val meals = new Meals()
+  private val meals = new Meals(
+    new FileMealsRepository(Paths.get("meals.txt")),
+    new SlackMealClient()
+  )
 
   args match {
     case Array("list")            => println(meals.list().fold(toString, toString))
